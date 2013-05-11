@@ -2,14 +2,14 @@ using Gee;
 
 namespace XSRSS
 {
-	public class Feed
+	public class Feed : Object
 	{
 		public class Item
 		{
 			public string title = null;
 			public string link = null;
 			public string description = null;
-			public string pub_date = null;
+			public DateTime pub_date = null;
 			public string guid = null;
 			public string author = null;
 			public bool read = false;
@@ -17,8 +17,8 @@ namespace XSRSS
 		public string title = null;
 		public string link  = null;
 		public string description = null;
-		public string pub_date = null;
-		public string last_build_date = null;
+		public DateTime pub_date = null;
+		public DateTime last_build_date = null;
 		public int ttl = -1;
 		public string image_url = null;
 		public string image_link = null;
@@ -65,7 +65,7 @@ namespace XSRSS
 						description = node->get_content();
 						break;
 					case "lastBuildDate":
-						last_build_date = node->get_content();
+						last_build_date = parse_text_date(node->get_content());
 						break;
 					case "item":
 						stdout.printf("Found item!\n");
@@ -86,7 +86,7 @@ namespace XSRSS
 									item.description = item_node->get_content();
 									break;
 								case "pubDate":
-									item.pub_date = item_node->get_content();
+									item.pub_date = parse_text_date(item_node->get_content());
 									break;
 								case "guid":
 									item.guid = item_node->get_content();
@@ -101,6 +101,7 @@ namespace XSRSS
 				}
 			}
 			delete document;
+			raw_feed_text = xml_text;
 			return true;
 		}
 
@@ -109,6 +110,7 @@ namespace XSRSS
 			stdout.printf("title: %s\n",title);
 			stdout.printf("description: %s\n",description);
 			stdout.printf("link: %s\n",link);
+			stdout.printf("lastBuildDate: %s\n",last_build_date.format("%F %T"));
 			stdout.printf("\nItems:\n\n");
 			foreach(Item item in items)
 			{
@@ -116,7 +118,81 @@ namespace XSRSS
 				stdout.printf("\tlink: %s\n",item.link);
 				stdout.printf("\tdescription: %s\n",item.description);
 				stdout.printf("\tguid: %s\n",item.guid);
+				stdout.printf("\tpubDate: %s\n",item.pub_date.format("%F %T"));
 				stdout.printf("\n");
+			}
+		}
+
+		// There's probably a library for this somewhere but I couldn't find it
+		private DateTime? parse_text_date(string text_date)
+		{
+			DateTime date;
+			int year, month, day, hour, minute, seconds;
+			// For the sake of simplicity we'll not care about timezones and
+			// just store everything as UTC
+			Regex regex = null;
+			MatchInfo match_info;
+			try
+			{
+				regex = new Regex("([0-9]+) ([A-Za-z]+) ([0-9]+) ([0-9]+):([0-9]+):([0-9]+)");
+			} catch(Error e)
+			{
+				stderr.printf("Exception while creating regex: %s\n",e.message);
+				Posix.exit(1);
+			}
+			if(regex.match(text_date,0,out match_info))
+			{
+				assert(match_info.get_match_count() >= 7);
+				day = int.parse(match_info.fetch(1));
+				year = int.parse(match_info.fetch(3));
+				hour = int.parse(match_info.fetch(4));
+				minute = int.parse(match_info.fetch(5));
+				seconds = int.parse(match_info.fetch(6));
+				month = 0;
+				switch(match_info.fetch(2).down())
+				{
+					case "jan":
+						month = 1;
+						break;
+					case "feb":
+						month = 2;
+						break;
+					case "mar":
+						month = 3;
+						break;
+					case "apr":
+						month = 4;
+						break;
+					case "may":
+						month = 5;
+						break;
+					case "jun":
+						month = 6;
+						break;
+					case "jul":
+						month = 7;
+						break;
+					case "aug":
+						month = 8;
+						break;
+					case "sep":
+						month = 9;
+						break;
+					case "oct":
+						month = 10;
+						break;
+					case "nov":
+						month = 11;
+						break;
+					case "dec":
+						month = 12;
+						break;
+				}
+				date = new DateTime.utc(year,month,day,hour,minute,seconds);
+				return date;
+			} else
+			{
+				return null;
 			}
 		}
 		
@@ -136,22 +212,5 @@ namespace XSRSS
 			}
 			return false;
 		}
-	}
-
-	int main(string[] args)
-	{
-		Xml.Parser.init();
-		Feed feed = new Feed();
-		string xml_feed;
-		if(FileUtils.get_contents("test.xml",out xml_feed,null))
-		{
-			feed.update(xml_feed);
-		}
-		if(FileUtils.get_contents("test2.xml",out xml_feed,null))
-		{
-			feed.update(xml_feed);
-		}
-		feed.print_data();
-		return 0;
 	}
 }
