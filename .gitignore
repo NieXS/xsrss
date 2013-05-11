@@ -1,0 +1,7 @@
+build/
+*~
+.lock*
+.waf*
+share/
+windows_build/
+*.swp
