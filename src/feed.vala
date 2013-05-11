@@ -9,6 +9,7 @@ namespace XSRSS
 			public string title = null;
 			public string link = null;
 			public string description = null;
+			public string content = null;
 			public DateTime pub_date = null;
 			public string guid = null;
 			public string author = null;
@@ -19,7 +20,7 @@ namespace XSRSS
 		public string description = null;
 		public DateTime pub_date = null;
 		public DateTime last_build_date = null;
-		public int ttl = -1;
+		public int update_interval = 60; // in minutes
 		public string image_url = null;
 		public string image_link = null;
 		public string image_alt_text = null;
@@ -30,6 +31,7 @@ namespace XSRSS
 		{
 			Xml.Doc *document = Xml.Parser.parse_doc(xml_text);
 			Xml.Node *root = document->get_root_element();
+			int update_frequency = 1; // <sy:updateFrequency>
 			if(root == null)
 			{
 				stderr.printf("xml_text is empty!\n");
@@ -67,6 +69,33 @@ namespace XSRSS
 					case "lastBuildDate":
 						last_build_date = parse_text_date(node->get_content());
 						break;
+					case "updatePeriod":
+						switch(node->get_content())
+						{
+							case "hourly":
+								update_interval = 60;
+								break;
+							case "daily":
+								update_interval = 60*24;
+								break;
+							case "weekly":
+								update_interval = 60*24*7;
+								break;
+							case "monthly":
+								update_interval = 60*24*30;
+								break;
+							case "yearly":
+								update_interval = 60*24*365;
+								break;
+						}
+						break;
+					case "updateFrequency":
+						update_frequency = int.parse(node->get_content());
+						if(update_frequency > 0)
+						{
+							update_interval = update_interval / update_frequency;
+						}
+						break;
 					case "item":
 						stdout.printf("Found item!\n");
 						Item item = new Item();
@@ -91,6 +120,9 @@ namespace XSRSS
 								case "guid":
 									item.guid = item_node->get_content();
 									break;
+								case "encoded":
+									item.content = item_node->get_content();
+									break;
 							}
 						}
 						if(!has_item_with_same_guid(item.guid))
@@ -111,12 +143,14 @@ namespace XSRSS
 			stdout.printf("description: %s\n",description);
 			stdout.printf("link: %s\n",link);
 			stdout.printf("lastBuildDate: %s\n",last_build_date.format("%F %T"));
+			stdout.printf("update_interval: %d\n",update_interval);
 			stdout.printf("\nItems:\n\n");
 			foreach(Item item in items)
 			{
 				stdout.printf("\ttitle: %s\n",item.title);
 				stdout.printf("\tlink: %s\n",item.link);
 				stdout.printf("\tdescription: %s\n",item.description);
+				stdout.printf("\tcontent:encoded: %s\n",item.content);
 				stdout.printf("\tguid: %s\n",item.guid);
 				stdout.printf("\tpubDate: %s\n",item.pub_date.format("%F %T"));
 				stdout.printf("\n");
