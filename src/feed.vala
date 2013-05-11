@@ -95,7 +95,7 @@ namespace XSRSS
 						}
 						if(!has_item_with_same_guid(item.guid))
 						{
-							items.insert(0,item);
+							items.append(item);
 						}
 						break;
 				}
