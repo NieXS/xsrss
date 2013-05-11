@@ -95,7 +95,7 @@ namespace XSRSS
 						}
 						if(!has_item_with_same_guid(item.guid))
 						{
-							items.append(item);
+							items.add(item);
 						}
 						break;
 				}
@@ -150,8 +150,8 @@ namespace XSRSS
 		if(FileUtils.get_contents("test2.xml",out xml_feed,null))
 		{
 			feed.update(xml_feed);
-			feed.print_data();
 		}
+		feed.print_data();
 		return 0;
 	}
 }
