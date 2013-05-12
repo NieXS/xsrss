@@ -43,20 +43,58 @@ namespace XSRSS
 			{
 				stdout.printf("Feed \"%s\" has no data in database!\n",user_name);
 			}
+			print_data();
 		}
 
 		private bool load_database_data()
 		{
-			string sql = "SELECT * FROM feeds WHERE user_name = '%s';".printf(user_name);
+			string sql = "SELECT title, description, link, image_url, image_link, image_alt_text, update_interval, id FROM feeds WHERE user_name = '%s';".printf(user_name);
 			bool has_data = false;
 			string err_msg;
+			int id = -1;
 			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
 				has_data = true;
+				title = values[0];
+				description = values[1];
+				link = values[2];
+				image_url = values[3];
+				image_link = values[4];
+				image_alt_text = values[5];
+				update_interval = int.parse(values[6]);
+				id = int.parse(values[7]);
 				return 0;
 			},out err_msg);
 			if(!(result == Sqlite.OK || result == Sqlite.ROW))
 			{
 				stderr.printf("Error running query! D: %s\n",err_msg);
+				return false;
+			}
+			sql = "SELECT guid, title, description, link, content, pub_date, author, read FROM items WHERE feed_id = '%d'".printf(id);
+			result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
+				Item item = new Item();
+				item.guid = values[0];
+				item.title = values[1];
+				item.description = values[2];
+				item.link = values[3];
+				item.content = values[4];
+				string[] split_date = values[5].split(" ");
+				string[] date = split_date[0].split("-");
+				string[] time = split_date[1].split(":");
+				item.pub_date = new DateTime.utc(int.parse(date[0]),int.parse(date[1]),int.parse(date[2]),int.parse(time[0]),int.parse(time[1]),int.parse(time[2]));
+				item.author = values[6];
+				item.read = int.parse(values[7]) == 1;
+				if(!has_item_with_same_guid(item.guid))
+				{
+					items.add(item);
+				} else
+				{
+					stdout.printf("Item with same guid \"%s\" already in memory\n",item.guid);
+				}
+				return 0;
+			},out err_msg);
+			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			{
+				stderr.printf("Error while loading items! %s\n",err_msg);
 				return false;
 			}
 			return has_data;
@@ -265,7 +303,6 @@ namespace XSRSS
 						for(Xml.Node *item_node = node->children;item_node != null;item_node = item_node->next)
 						{
 							string item_node_name = item_node->name;
-							stdout.printf("item_node_name: %s\n",item_node_name);
 							switch(item_node_name)
 							{
 								case "title":
@@ -337,7 +374,7 @@ namespace XSRSS
 				stdout.printf("\ttitle: %s\n",item.title);
 				stdout.printf("\tlink: %s\n",item.link);
 				stdout.printf("\tdescription: %s\n",item.description);
-				stdout.printf("\tcontent:encoded: %s\n",item.content);
+				stdout.printf("\tcontent:encoded: snip\n");
 				stdout.printf("\tguid: %s\n",item.guid);
 				stdout.printf("\tpubDate: %s\n",item.pub_date.format("%F %T"));
 				stdout.printf("\n");
