@@ -17,6 +17,7 @@ namespace XSRSS
 		}
 		public string user_name;
 		public string feed_url;
+		public int id;
 		public string title = null;
 		public string link  = null;
 		public string description = null;
@@ -38,9 +39,91 @@ namespace XSRSS
 			soup_session = new Soup.SessionAsync();
 			Soup.Logger logger = new Soup.Logger(Soup.LoggerLogLevel.HEADERS,-1);
 			soup_session.add_feature(logger);
+			if(!load_database_data())
+			{
+				stdout.printf("Feed \"%s\" has no data in database!\n",user_name);
+			}
 		}
 
-		public bool parse_xml(string xml_text)
+		private bool load_database_data()
+		{
+			string sql = "SELECT * FROM feeds WHERE user_name = '%s';".printf(user_name);
+			bool has_data = false;
+			string err_msg;
+			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
+				has_data = true;
+				return 0;
+			},out err_msg);
+			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			{
+				stderr.printf("Error running query! D: %s\n",err_msg);
+				return false;
+			}
+			return has_data;
+		}
+
+		private bool save_data_to_database()
+		{
+			string sql = "SELECT * FROM feeds WHERE user_name = '%s';".printf(user_name);
+			bool has_data = false;
+			string err_msg;
+			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
+				has_data = true;
+				return 0;
+			},out err_msg);
+			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			{
+				stderr.printf("Error running query! D: %s\n",err_msg);
+				return false;
+			}
+			if(has_data)
+			{
+				sql = "UPDATE feeds SET user_name = ?, feed_url = ?, title = ?, description = ?, link = ?, update_interval = ? WHERE user_name = '%s';".printf(user_name);
+			} else
+			{
+				sql = "INSERT INTO feeds (user_name, feed_url, title, description, link, update_interval) VALUES (?,?,?,?,?,?);";
+			}
+			Sqlite.Statement statement;
+			if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
+			{
+				statement.bind_text(1,user_name,-1);
+				statement.bind_text(2,feed_url,-1);
+				statement.bind_text(3,title,-1);
+				statement.bind_text(4,description,-1);
+				statement.bind_text(5,link,-1);
+				statement.bind_int(6,update_interval);
+				stdout.printf("Running SQL:\n\t%s\n",statement.sql());
+				switch(statement.step())
+				{
+					case Sqlite.ROW:
+					case Sqlite.DONE:
+						stdout.printf("Saved feed information successfully.\n");
+						save_items_to_database();
+						return true;
+						break;
+					case Sqlite.MISUSE:
+						stderr.printf("Sqlite.MISUSE happened!\n");
+						Posix.exit(1);
+						break;
+					default:
+						stderr.printf("Something went wrong! %s\n",Instance.db_connection.database.errmsg());
+						return false;
+						break;
+				}
+			} else
+			{
+				stderr.printf("Error saving data! %s\n",Instance.db_connection.database.errmsg());
+				Posix.exit(1);
+			}
+			return true;
+		}
+
+		private void save_items_to_database()
+		{
+			
+		}
+
+		private bool parse_xml(string xml_text)
 		{
 			Xml.Doc *document = Xml.Parser.parse_doc(xml_text);
 			Xml.Node *root = document->get_root_element();
@@ -166,6 +249,7 @@ namespace XSRSS
 				parse_xml((string)message_body.data);
 				updating = false;
 				print_data();
+				save_data_to_database();
 			} else
 			{
 				session.requeue_message(message);
