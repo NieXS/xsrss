@@ -15,6 +15,8 @@ namespace XSRSS
 			public string author = null;
 			public bool read = false;
 		}
+		public string user_name;
+		public string feed_url;
 		public string title = null;
 		public string link  = null;
 		public string description = null;
@@ -26,8 +28,19 @@ namespace XSRSS
 		public string image_alt_text = null;
 		public Gee.ArrayList<Item> items = new ArrayList<Item>((EqualDataFunc)item_equal_func);
 		public string raw_feed_text = null;
+		private Soup.Session soup_session;
+		public bool updating = false;
 
-		public bool update(string xml_text)
+		public Feed(string name,string feed_url)
+		{
+			user_name = name;
+			this.feed_url = feed_url;
+			soup_session = new Soup.SessionAsync();
+			Soup.Logger logger = new Soup.Logger(Soup.LoggerLogLevel.HEADERS,-1);
+			soup_session.add_feature(logger);
+		}
+
+		public bool parse_xml(string xml_text)
 		{
 			Xml.Doc *document = Xml.Parser.parse_doc(xml_text);
 			Xml.Node *root = document->get_root_element();
@@ -137,6 +150,29 @@ namespace XSRSS
 			return true;
 		}
 
+		public void update()
+		{
+			updating = true;
+			Soup.Message message = new Soup.Message("GET",feed_url);
+			soup_session.queue_message(message,process_message);
+		}
+
+		private void process_message(Soup.Session session,Soup.Message message)
+		{
+			if(message.status_code == Soup.KnownStatusCode.OK)
+			{
+				stdout.printf("Success!\n");
+				Soup.MessageBody message_body = message.response_body;
+				parse_xml((string)message_body.data);
+				updating = false;
+				print_data();
+			} else
+			{
+				session.requeue_message(message);
+				stdout.printf("Failed, requeueing\n");
+			}
+		}
+			
 		public void print_data()
 		{
 			stdout.printf("title: %s\n",title);
