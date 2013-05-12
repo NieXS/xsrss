@@ -120,7 +120,74 @@ namespace XSRSS
 
 		private void save_items_to_database()
 		{
-			
+			// Since this is being called from save_data_to_database we are
+			// guaranteed to have a row in the feeds table
+			string sql = "SELECT id FROM feeds WHERE user_name = '%s';".printf(user_name);
+			int id = -1;
+			string err_msg;
+			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
+				id = int.parse(values[0]);
+				return 0;
+			},out err_msg);
+			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			{
+				stderr.printf("Error running query! D: %s\n",err_msg);
+				Posix.exit(1);
+			}
+			stdout.printf("Our database id: %d\n",id);
+			foreach(Item item in items)
+			{
+				sql = "SELECT guid FROM items WHERE guid = '%s';".printf(item.guid);
+				bool found = false;
+				result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
+					found = true;
+					return 0;
+				},out err_msg);
+				if(!(result == Sqlite.OK || result == Sqlite.ROW))
+				{
+					stderr.printf("Error running query! D: %s\n",err_msg);
+					Posix.exit(1);
+				}
+				if(found)
+				{
+					stdout.printf("Item with guid %s is already in database, skipping\n",item.guid);
+				} else
+				{
+					sql = "INSERT INTO items (guid, feed_id, title, link, description, content, pub_date, author, read) VALUES (?,?,?,?,?,?,?,?,?);";
+					Sqlite.Statement statement;
+					if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
+					{
+						statement.bind_text(1,item.guid,-1);
+						statement.bind_int(2,id);
+						statement.bind_text(3,item.title,-1);
+						statement.bind_text(4,item.link,-1);
+						statement.bind_text(5,item.description,-1);
+						statement.bind_text(6,item.content,-1);
+						statement.bind_text(7,item.pub_date.format("%F %T"),-1);
+						statement.bind_text(8,item.author,-1);
+						statement.bind_int(9,item.read ? 1 : 0);
+						switch(statement.step())
+						{
+							case Sqlite.ROW:
+							case Sqlite.DONE:
+								stdout.printf("Saved item with guid \"%s\" successfully.\n",item.guid);
+								break;
+							case Sqlite.MISUSE:
+								stderr.printf("Sqlite.MISUSE happened!\n");
+								Posix.exit(1);
+								break;
+							default:
+								stderr.printf("Something went wrong! %s\n",Instance.db_connection.database.errmsg());
+								return;
+								break;
+						}
+					} else
+					{
+						stderr.printf("Error preparing statement! %s\n",Instance.db_connection.database.errmsg());
+						Posix.exit(1);
+					}
+				}
+			}
 		}
 
 		private bool parse_xml(string xml_text)
