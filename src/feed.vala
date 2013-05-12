@@ -31,6 +31,7 @@ namespace XSRSS
 		public string raw_feed_text = null;
 		private Soup.Session soup_session;
 		public bool updating = false;
+		private TimeoutSource update_source = null;
 
 		public Feed(string name,string feed_url)
 		{
@@ -43,7 +44,32 @@ namespace XSRSS
 			{
 				stdout.printf("Feed \"%s\" has no data in database!\n",user_name);
 			}
+			update_timeout_source();
 			print_data();
+		}
+
+		~Feed()
+		{
+			if(update_source != null)
+			{
+				update_source.destroy();
+			}
+		}
+
+		private void update_timeout_source()
+		{
+			if(update_source != null)
+			{
+				update_source.destroy();
+			}
+			update_source = new TimeoutSource.seconds(update_interval);
+			update_source.set_callback(() =>
+			{
+				stdout.printf("Updating feed %s\n",user_name);
+				update();
+				return false;
+			});
+			update_source.attach(null);
 		}
 
 		private bool load_database_data()
@@ -61,7 +87,7 @@ namespace XSRSS
 				image_link = values[4];
 				image_alt_text = values[5];
 				update_interval = int.parse(values[6]);
-				id = int.parse(values[7]);
+				id = values[7] != null ? int.parse(values[7]) : 60;
 				return 0;
 			},out err_msg);
 			if(!(result == Sqlite.OK || result == Sqlite.ROW))

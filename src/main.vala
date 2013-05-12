@@ -5,6 +5,7 @@ namespace XSRSS
 	namespace Instance
 	{
 		public Database db_connection;
+		public FeedManager feed_manager;
 	}
 	int main(string[] args)
 	{
