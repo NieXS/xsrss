@@ -8,6 +8,12 @@ namespace XSRSS
 		
 		public Database()
 		{
+			// Making sure the database exists
+			if(!FileUtils.test("xsrss.db",FileTest.EXISTS))
+			{
+				stderr.printf("Database does not exist! Create it manually first.\n");
+				Posix.exit(1);
+			}
 			int result = Sqlite.Database.open("xsrss.db",out database);
 			if(result != Sqlite.OK)
 			{
