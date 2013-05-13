@@ -5,6 +5,7 @@ namespace XSRSS
 	namespace Instance
 	{
 		public Database db_connection;
+		public MainLoop main_loop;
 		public FeedManager feed_manager;
 	}
 	int main(string[] args)
@@ -13,10 +14,9 @@ namespace XSRSS
 		// feeds, store stuff to database, etc
 		Xml.Parser.init();
 		Instance.db_connection = new Database();
-		Feed test = new Feed("Ars Technica","http://feeds.arstechnica.com/arstechnica/index/");
-		MainLoop main_loop = new MainLoop();
-		test.update();
-		main_loop.run();
+		Instance.main_loop = new MainLoop();
+		Instance.feed_manager = new FeedManager();
+		Instance.main_loop.run();
 		return 0;
 	}
 }

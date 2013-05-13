@@ -8,7 +8,7 @@ namespace XSRSS
 
 		public FeedManager()
 		{
-			// Loading feeds from the database
+			load_feeds_from_database();
 		}
 
 		private void load_feeds_from_database()
@@ -24,6 +24,10 @@ namespace XSRSS
 			{
 				stderr.printf("Error loading feeds from database: %s\n",err_msg);
 				Posix.exit(1);
+			}
+			foreach(Feed feed in feeds)
+			{
+				feed.update();
 			}
 		}
 	}

@@ -40,6 +40,7 @@ namespace XSRSS
 			soup_session = new Soup.SessionAsync();
 			Soup.Logger logger = new Soup.Logger(Soup.LoggerLogLevel.HEADERS,-1);
 			soup_session.add_feature(logger);
+			soup_session.add_feature_by_type(typeof(Soup.ProxyResolverDefault));
 			if(!load_database_data())
 			{
 				stdout.printf("Feed \"%s\" has no data in database!\n",user_name);
@@ -383,7 +384,7 @@ namespace XSRSS
 			} else
 			{
 				session.requeue_message(message);
-				stdout.printf("Failed, requeueing\n");
+				stdout.printf("Failed! reason_phrase: %s\n",message.reason_phrase);
 			}
 		}
 			
