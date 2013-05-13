@@ -46,7 +46,6 @@ namespace XSRSS
 				stdout.printf("Feed \"%s\" has no data in database!\n",user_name);
 			}
 			update_timeout_source();
-			print_data();
 		}
 
 		~Feed()
@@ -379,35 +378,14 @@ namespace XSRSS
 				Soup.MessageBody message_body = message.response_body;
 				parse_xml((string)message_body.data);
 				updating = false;
-				print_data();
 				save_data_to_database();
 			} else
 			{
-				session.requeue_message(message);
 				stdout.printf("Failed! reason_phrase: %s\n",message.reason_phrase);
+				updating = false;
 			}
 		}
 			
-		public void print_data()
-		{
-			stdout.printf("title: %s\n",title);
-			stdout.printf("description: %s\n",description);
-			stdout.printf("link: %s\n",link);
-			stdout.printf("lastBuildDate: %s\n",last_build_date.format("%F %T"));
-			stdout.printf("update_interval: %d\n",update_interval);
-			stdout.printf("\nItems:\n\n");
-			foreach(Item item in items)
-			{
-				stdout.printf("\ttitle: %s\n",item.title);
-				stdout.printf("\tlink: %s\n",item.link);
-				stdout.printf("\tdescription: %s\n",item.description);
-				stdout.printf("\tcontent:encoded: snip\n");
-				stdout.printf("\tguid: %s\n",item.guid);
-				stdout.printf("\tpubDate: %s\n",item.pub_date.format("%F %T"));
-				stdout.printf("\n");
-			}
-		}
-
 		// There's probably a library for this somewhere but I couldn't find it
 		private DateTime? parse_text_date(string text_date)
 		{
