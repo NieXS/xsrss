@@ -21,6 +21,7 @@ namespace XSRSS
 
 		private void list_feeds(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
+			string body = "Not working yet";
 			msg.set_status(Soup.KnownStatusCode.OK);
 			msg.set_response("text/html",Soup.MemoryUse.COPY,body.data);
 		}
