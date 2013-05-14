@@ -7,6 +7,7 @@ namespace XSRSS
 		public Database db_connection;
 		public MainLoop main_loop;
 		public FeedManager feed_manager;
+		public WebInterface web_interface;
 	}
 	int main(string[] args)
 	{
@@ -16,6 +17,7 @@ namespace XSRSS
 		Instance.db_connection = new Database();
 		Instance.main_loop = new MainLoop();
 		Instance.feed_manager = new FeedManager();
+		Instance.web_interface = new WebInterface();
 		Instance.main_loop.run();
 		return 0;
 	}
