@@ -17,16 +17,10 @@ namespace XSRSS
 			});
 			server.add_handler("/feeds",list_feeds);
 			server.add_handler("/static",static_files);
+			server.add_handler("/feed",show_feed);
 			server.run_async();
 		}
 
-		private void list_feeds(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
-		{
-			Template template = new Template("list_feeds");
-			template.define_variable("title","All feeds");
-			msg.set_status(Soup.KnownStatusCode.OK);
-			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
-		}
 		private void static_files(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			// We should probably sanitize the path here to make sure it
@@ -63,6 +57,31 @@ namespace XSRSS
 				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
 				msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
 			}
+		}
+
+		private void list_feeds(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			Template template = new Template("list_feeds");
+			template.define_variable("title","All feeds");
+			template.define_variable("numfeeds",Instance.feed_manager.feeds.size.to_string());
+			StringBuilder feed_list = new StringBuilder();
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				feed_list.append("<li><a href=\"/feed/%s\">%s</a></li>\n".printf(feed.user_name,feed.user_name));
+			}
+			template.define_variable("feeds",feed_list.str);
+			msg.set_status(Soup.KnownStatusCode.OK);
+			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+		}
+
+		private void show_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			string feed_name = path.substring(6);
+
+			Template template = new Template("feed");
+			template.define_variable("title",feed_name);
+			msg.set_status(Soup.KnownStatusCode.OK);
+			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
 		}
 	}
 }

@@ -26,7 +26,7 @@ namespace XSRSS
 			if(!FileUtils.test("templates/%s.html".printf(file),FileTest.EXISTS))
 			{
 				stderr.printf("Template file %s.html does not exist!\n",file);
-				return null;
+				return "";
 			}
 			try
 			{
@@ -77,12 +77,12 @@ namespace XSRSS
 				} else
 				{
 					stderr.printf("Template %s.html not found!\n",file);
-					return null;
+					return "";
 				}
 			} catch(Error e)
 			{
 				stderr.printf("Exception while parsing template: %s\n",e.message);
-				return null;
+				return "";
 			}
 		}
 	}
