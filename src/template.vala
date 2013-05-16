@@ -15,6 +15,11 @@ namespace XSRSS
 			this.variables = variables;
 		}
 
+		public void define_variable(string variable,string @value)
+		{
+			variables[variable] = @value;
+		}
+
 		public string? render()
 		{
 			string file = is_main_template ? "main" : subtemplate_file;
