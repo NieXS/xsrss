@@ -77,10 +77,31 @@ namespace XSRSS
 		private void show_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			string feed_name = path.substring(6);
-			
-
+			LinkedList<Feed.Item> items = assemble_item_list(feed_name);
 			Template template = new Template("feed");
+			if(items != null)
+			{
+				LinkedList<HashMap<string,string>> items_list = new LinkedList<HashMap<string,string>>();
+				foreach(Feed.Item item in items)
+				{
+					HashMap<string,string> variables = new HashMap<string,string>();
+					variables["title"] = item.title;
+					variables["unread"] = item.read ? "" : " unread";
+					variables["markasread"] = item.read ? "" : " - <a href=\"/markasread/%s\">Mark as read</a>".printf(item.guid);
+					variables["pubdate"] = item.pub_date != null ? item.pub_date.format("%F %T") : "";
+					variables["link"] = item.link != null ? "<a href=\"%s\">".printf(item.link) : "";
+					variables["endlink"] = item.link != null ? "</a>" : "";
+					variables["text"] = item.content != null ? item.content : (item.description != null ? item.description : "");
+					items_list.add(variables);
+				}
+				template.define_foreach("item",items_list);
+			}
 			template.define_variable("title",feed_name);
+			template.define_variable("feed",feed_name);
+			if(items == null)
+			{
+				template.define_variable("noitems","<span class=\"noitems\">There are no items in this feed.</span>");
+			}
 			msg.set_status(Soup.KnownStatusCode.OK);
 			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
 		}

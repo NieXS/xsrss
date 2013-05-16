@@ -104,9 +104,15 @@ namespace XSRSS
 				item.link = values[3];
 				item.content = values[4];
 				string[] split_date = values[5].split(" ");
-				string[] date = split_date[0].split("-");
-				string[] time = split_date[1].split(":");
-				item.pub_date = new DateTime.utc(int.parse(date[0]),int.parse(date[1]),int.parse(date[2]),int.parse(time[0]),int.parse(time[1]),int.parse(time[2]));
+				if(split_date != null)
+				{
+					string[] date = split_date[0].split("-");
+					string[] time = split_date[1].split(":");
+					item.pub_date = new DateTime.utc(int.parse(date[0]),int.parse(date[1]),int.parse(date[2]),int.parse(time[0]),int.parse(time[1]),int.parse(time[2]));
+				} else
+				{
+					item.pub_date = null;
+				}
 				item.author = values[6];
 				item.read = int.parse(values[7]) == 1;
 				if(!has_item_with_same_guid(item.guid))
@@ -350,6 +356,10 @@ namespace XSRSS
 									item.content = item_node->get_content();
 									break;
 							}
+						}
+						if(item.guid == null)
+						{
+							item.guid = item.link;
 						}
 						if(!has_item_with_same_guid(item.guid))
 						{

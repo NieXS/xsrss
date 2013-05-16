@@ -58,7 +58,7 @@ namespace XSRSS
 					{
 						if(variable == "pathtemplate")
 						{
-							Template subtemplate = new Template(subtemplate_file,false,variables);
+							Template subtemplate = new Template(subtemplate_file,false,variables,foreaches);
 							rendered_template = rendered_template.replace("$pathtemplate$",subtemplate.render());
 						} else if(variable.has_prefix("include:"))
 						{
