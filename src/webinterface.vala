@@ -77,11 +77,54 @@ namespace XSRSS
 		private void show_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			string feed_name = path.substring(6);
+			
 
 			Template template = new Template("feed");
 			template.define_variable("title",feed_name);
 			msg.set_status(Soup.KnownStatusCode.OK);
 			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+		}
+
+		private LinkedList<Feed.Item>? assemble_item_list(string? feed_name)
+		{
+			LinkedList<Feed.Item> item_list = new LinkedList<Feed.Item>();
+			if(feed_name == null)
+			{
+				// Assemble the list with all items from all feeds
+				foreach(Feed feed in Instance.feed_manager.feeds)
+				{
+					foreach(Feed.Item item in feed.items)
+					{
+						item_list.add(item);
+					}
+				}
+			} else
+			{
+				bool found_feed = false;
+				foreach(Feed feed in Instance.feed_manager.feeds)
+				{
+					if(feed.user_name == feed_name)
+					{
+						found_feed = true;
+						foreach(Feed.Item item in feed.items)
+						{
+							item_list.add(item);
+						}
+						break;
+					}
+				}
+				if(!found_feed)
+				{
+					return null;
+				}
+			}
+			item_list.sort((CompareDataFunc<Feed.Item>)compare_item_by_pub_date);
+			return item_list;
+		}
+
+		private static int compare_item_by_pub_date(Feed.Item a,Feed.Item b)
+		{
+			return a.pub_date.compare(b.pub_date);
 		}
 	}
 }

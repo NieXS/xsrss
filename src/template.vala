@@ -5,19 +5,26 @@ namespace XSRSS
 	public class Template : Object
 	{
 		private HashMap<string,string> variables;
+		private HashMap<string,LinkedList<HashMap<string,string>>> foreaches;
 		private bool is_main_template = false;
 		private string subtemplate_file;
 		
-		public Template(string subtemplate_file,bool is_main = true, HashMap<string,string> variables = new HashMap<string,string>())
+		public Template(string subtemplate_file,bool is_main = true, HashMap<string,string> variables = new HashMap<string,string>(), HashMap<string,LinkedList<HashMap<string,string>>> foreaches = new HashMap<string,LinkedList<HashMap<string,string>>>())
 		{
 			is_main_template = is_main;
 			this.subtemplate_file = subtemplate_file;
 			this.variables = variables;
+			this.foreaches = foreaches;
 		}
 
 		public void define_variable(string variable,string @value)
 		{
 			variables[variable] = @value;
+		}
+
+		public void define_foreach(string name,LinkedList<HashMap<string,string>> data)
+		{
+			foreaches[name] = data;
 		}
 
 		public string? render()
@@ -34,10 +41,6 @@ namespace XSRSS
 				LinkedList<string> found_variables = new LinkedList<string>();
 				if(FileUtils.get_contents("templates/%s.html".printf(file),out rendered_template))
 				{
-					// Using a regex to get the list of variables is probably
-					// the simplest way to do this, but it doesn't allow for
-					// implementing foreach loops easily, but hopefully we
-					// won't need that
 					Regex regex = new Regex("\\$([a-zA-Z:]+)\\$");
 					MatchInfo match_info;
 					if(regex.match(rendered_template,0,out match_info))
@@ -61,6 +64,23 @@ namespace XSRSS
 						{
 							Template included_file = new Template(variable.substring(8),false,variables);
 							rendered_template = rendered_template.replace("$%s$".printf(variable),included_file.render());
+						} else if(variable.has_prefix("foreach:"))
+						{
+							string loop_name = variable.substring(8);
+							if(foreaches.has_key(loop_name))
+							{
+								StringBuilder unwound_loop = new StringBuilder();
+								foreach(HashMap<string,string> var_list in foreaches[loop_name])
+								{
+									Template subfile = new Template(loop_name,false,var_list);
+									unwound_loop.append(subfile.render());
+								}
+								rendered_template = rendered_template.replace("$%s$".printf(variable),unwound_loop.str);
+							} else
+							{
+								stdout.printf("Undefined foreach in file %s: %s\n",file,loop_name);
+								rendered_template = rendered_template.replace("$%s$".printf(variable),"");
+							}
 						} else
 						{
 							if(variables.has_key(variable))
