@@ -198,13 +198,14 @@ namespace XSRSS
 					return null;
 				}
 			}
-			item_list.sort((CompareDataFunc<Feed.Item>)compare_item_by_pub_date);
+			item_list.sort((CompareDataFunc<Feed.Item>)compare_item_by_reverse_pub_date);
 			return item_list;
 		}
 
-		private static int compare_item_by_pub_date(Feed.Item a,Feed.Item b)
+		private static int compare_item_by_reverse_pub_date(Feed.Item a,Feed.Item b)
 		{
-			return a.pub_date.compare(b.pub_date);
+			return -a.pub_date.compare(b.pub_date);
 		}
+
 	}
 }
