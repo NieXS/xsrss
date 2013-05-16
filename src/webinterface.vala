@@ -13,6 +13,7 @@ namespace XSRSS
 			server.add_handler("/feeds",list_feeds);
 			server.add_handler("/static",static_files);
 			server.add_handler("/feed",show_feed);
+			server.add_handler("/markasread",mark_item_as_read);
 			server.run_async();
 		}
 
@@ -54,6 +55,38 @@ namespace XSRSS
 			}
 		}
 
+		private void mark_item_as_read(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			string item_guid = Uri.unescape_string(path.substring(12)); // /markasread/
+			stdout.printf("item_guid: \"%s\"\n",item_guid);
+			bool found_item = false;
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				foreach(Feed.Item item in feed.items)
+				{
+					if(item.guid == item_guid)
+					{
+						item.read = true;
+						feed.save_data_to_database();
+						found_item = true;
+						break;
+					}
+				}
+				if(found_item)
+				{
+					break;
+				}
+			}
+			msg.set_status(Soup.KnownStatusCode.OK);
+			if(found_item)
+			{
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"Item marked as read successfully.".data);
+			} else
+			{
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"Item not found!".data);
+			}
+		}
+
 		private void list_all_items(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			LinkedList<Feed.Item> items = assemble_item_list(null);
@@ -66,7 +99,7 @@ namespace XSRSS
 					HashMap<string,string> variables = new HashMap<string,string>();
 					variables["title"] = item.title;
 					variables["unread"] = item.read ? "" : " unread";
-					variables["markasread"] = item.read ? "" : " - <a href=\"/markasread/%s\">Mark as read</a>".printf(item.guid);
+					variables["markasread"] = item.read ? "" : " - <a href=\"/markasread/%s\">Mark as read</a>".printf(Uri.escape_string(item.guid));
 					variables["pubdate"] = item.pub_date != null ? item.pub_date.format("%F %T") : "";
 					variables["link"] = item.link != null ? "<a href=\"%s\">".printf(item.link) : "";
 					variables["endlink"] = item.link != null ? "</a>" : "";

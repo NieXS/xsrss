@@ -132,7 +132,7 @@ namespace XSRSS
 			return has_data;
 		}
 
-		private bool save_data_to_database()
+		public bool save_data_to_database()
 		{
 			string sql = "SELECT * FROM feeds WHERE user_name = '%s';".printf(user_name);
 			bool has_data = false;
