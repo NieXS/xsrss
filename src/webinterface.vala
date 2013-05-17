@@ -13,6 +13,7 @@ namespace XSRSS
 			server.add_handler("/feeds",list_feeds);
 			server.add_handler("/static",static_files);
 			server.add_handler("/feed",show_feed);
+			server.add_handler("/update",update_feed);
 			server.add_handler("/markasread",mark_item_as_read);
 			server.run_async();
 		}
@@ -52,6 +53,33 @@ namespace XSRSS
 			{
 				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
 				msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
+			}
+		}
+
+		private void update_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			string feed_name = path.substring(8); // /update/
+			bool found = false;
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				if(feed.user_name == feed_name)
+				{
+					found = true;
+					if(!feed.updating)
+					{
+						feed.update();
+					}
+					break;
+				}
+			}
+			if(found)
+			{
+				msg.set_status(Soup.KnownStatusCode.OK);
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"Update queued! Check back in 5-10 seconds, tops.".data);
+			} else
+			{
+				msg.set_status(Soup.KnownStatusCode.OK);
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"Couldn't find a feed with that name!".data);
 			}
 		}
 
@@ -155,8 +183,18 @@ namespace XSRSS
 				}
 				template.define_foreach("item",items_list);
 			}
+			bool feed_updated = true;
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				if(feed.user_name == feed_name)
+				{
+					feed_updated = !feed.updating;
+					break;
+				}
+			}
 			template.define_variable("title",feed_name);
 			template.define_variable("feed",feed_name);
+			template.define_variable("updating_text",feed_updated ? "" : "Feed is updating");
 			if(items == null)
 			{
 				template.define_variable("noitems","<span class=\"noitems\">There are no items in this feed.</span>");
