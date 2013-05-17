@@ -2,9 +2,16 @@
 <html>
 	<head>
 		<title>xsrss - $title$</title>
+		<link rel="stylesheet" type="text/css" href="/static/xsrss.css" />
 	</head>
 	<body>
-		$include:sidebar$
-		$pathtemplate$
+		<div id="main">
+			<div id="sidebar">
+				$include:sidebar$
+			</div>
+			<div id="content">
+				$pathtemplate$
+			</div>
+		</div>
 	</body>
 </html>

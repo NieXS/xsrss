@@ -1,0 +1,26 @@
+body
+{
+	background-color: #DCDCDC;
+	color: #000;
+	font-family: sans-serif;
+	font-size: 90%;
+}
+
+#main
+{
+	padding: 10px;
+	background-color: #FFF;
+	margin: 5px;
+	border: 1px solid #000;
+}
+
+#sidebar
+{
+	float: left;
+	width: 150px;
+}
+
+#content
+{
+	margin-left: 160px;
+}
