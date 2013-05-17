@@ -27,7 +27,7 @@ namespace XSRSS
 			foreaches[name] = data;
 		}
 
-		public string? render()
+		public string render()
 		{
 			string file = is_main_template ? "main" : subtemplate_file;
 			if(!FileUtils.test("templates/%s.html".printf(file),FileTest.EXISTS))
@@ -41,7 +41,7 @@ namespace XSRSS
 				LinkedList<string> found_variables = new LinkedList<string>();
 				if(FileUtils.get_contents("templates/%s.html".printf(file),out rendered_template))
 				{
-					Regex regex = new Regex("\\$([a-zA-Z:]+)\\$");
+					Regex regex = new Regex("\\$([a-zA-Z_:]+)\\$");
 					MatchInfo match_info;
 					if(regex.match(rendered_template,0,out match_info))
 					{
@@ -79,6 +79,17 @@ namespace XSRSS
 							} else
 							{
 								stdout.printf("Undefined foreach in file %s: %s\n",file,loop_name);
+								rendered_template = rendered_template.replace("$%s$".printf(variable),"");
+							}
+						} else if(variable.has_prefix("callback:"))
+						{
+							string callback_name = variable.substring(9);
+							if(Instance.template_callbacks.callbacks.has_key(callback_name))
+							{
+								rendered_template = rendered_template.replace("$%s$".printf(variable),Instance.template_callbacks.callbacks[callback_name].callback());
+							} else
+							{
+								stdout.printf("Undefined callback in file %s: %s\n",file,callback_name);
 								rendered_template = rendered_template.replace("$%s$".printf(variable),"");
 							}
 						} else
