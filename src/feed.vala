@@ -220,7 +220,40 @@ namespace XSRSS
 				}
 				if(found)
 				{
-					stdout.printf("Item with guid %s is already in database, skipping\n",item.guid);
+					sql = "UPDATE items SET guid = ?, feed_id = ?, title = ?, link = ?, description = ?, content = ?, pub_date = ?, author = ?, read = ? WHERE guid = ?;";
+					Sqlite.Statement statement;
+					if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
+					{
+						statement.bind_text(1,item.guid,-1);
+						statement.bind_int(2,id);
+						statement.bind_text(3,item.title,-1);
+						statement.bind_text(4,item.link,-1);
+						statement.bind_text(5,item.description,-1);
+						statement.bind_text(6,item.content,-1);
+						statement.bind_text(7,item.pub_date.format("%F %T"),-1);
+						statement.bind_text(8,item.author,-1);
+						statement.bind_int(9,item.read ? 1 : 0);
+						statement.bind_text(10,item.guid,-1);
+						switch(statement.step())
+						{
+							case Sqlite.ROW:
+							case Sqlite.DONE:
+								stdout.printf("Updated item with guid \"%s\" successfully.\n",item.guid);
+								break;
+							case Sqlite.MISUSE:
+								stderr.printf("Sqlite.MISUSE happened!\n");
+								Posix.exit(1);
+								break;
+							default:
+								stderr.printf("Something went wrong! %s\n",Instance.db_connection.database.errmsg());
+								return;
+								break;
+						}
+					} else
+					{
+						stderr.printf("Error preparing statement! %s\n",Instance.db_connection.database.errmsg());
+						Posix.exit(1);
+					}
 				} else
 				{
 					sql = "INSERT INTO items (guid, feed_id, title, link, description, content, pub_date, author, read) VALUES (?,?,?,?,?,?,?,?,?);";

@@ -35,6 +35,21 @@ namespace XSRSS
 				HashMap<string,string> feed_info = new HashMap<string,string>();
 				feed_info["feedurl"] = Uri.escape_string(feed.user_name);
 				feed_info["feed"] = feed.user_name;
+				int unread = 0;
+				foreach(Feed.Item item in feed.items)
+				{
+					if(!item.read)
+					{
+						unread++;
+					}
+				}
+				if(unread > 0)
+				{
+					feed_info["unread_items"] = "(%d)".printf(unread);
+				} else
+				{
+					feed_info["unread_items"] = "";
+				}
 				variables.add(feed_info);
 			}
 			variables.sort((CompareDataFunc<Feed>)compare_feeds_by_name);

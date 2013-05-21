@@ -15,6 +15,7 @@ namespace XSRSS
 			server.add_handler("/feed",show_feed);
 			server.add_handler("/update",update_feed);
 			server.add_handler("/markasread",mark_item_as_read);
+			server.add_handler("/markallasread",mark_all_items_as_read);
 			server.run_async();
 		}
 
@@ -80,6 +81,33 @@ namespace XSRSS
 			{
 				msg.set_status(Soup.KnownStatusCode.OK);
 				msg.set_response("text/html",Soup.MemoryUse.COPY,"Couldn't find a feed with that name!".data);
+			}
+		}
+
+		private void mark_all_items_as_read(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			string feed_name = Uri.unescape_string(path.substring(16)); // /markallasread/
+			bool found_feed = false;
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				if(feed.user_name == feed_name)
+				{
+					foreach(Feed.Item item in feed.items)
+					{
+						item.read = true;
+					}
+					feed.save_data_to_database();
+					found_feed = true;
+					break;
+				}
+			}
+			msg.set_status(Soup.KnownStatusCode.OK);
+			if(found_feed)
+			{
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"All items from feed %s were marked as read successfully.".printf(feed_name).data);
+			} else
+			{
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"Couldn't find a feed with name %s!".printf(feed_name).data);
 			}
 		}
 
