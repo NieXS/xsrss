@@ -9,8 +9,10 @@ namespace XSRSS
 		public WebInterface()
 		{
 			server = new Soup.Server("port",9889);
-			server.add_handler("/",list_all_items);
+			server.add_handler("/",root_handler);
+			server.add_handler("/home",home_handler);
 			server.add_handler("/feeds",list_feeds);
+			server.add_handler("/allfeeds",list_all_items);
 			server.add_handler("/static",static_files);
 			server.add_handler("/feed",show_feed);
 			server.add_handler("/update",update_feed);
@@ -54,6 +56,51 @@ namespace XSRSS
 			{
 				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
 				msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
+			}
+		}
+
+		private void home_handler(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			Template template = new Template("home");
+			template.define_variable("title","Home");
+			
+			LinkedList<HashMap<string,string>> new_items = new LinkedList<HashMap<string,string>>();
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				feed.items.sort((CompareDataFunc<Feed.Item>)compare_item_by_reverse_pub_date);
+				int unread = 0;
+				foreach(Feed.Item item in feed.items)
+				{
+					if(!item.read)
+					{
+						unread++;
+					}
+				}
+				HashMap<string,string> variables = new HashMap<string,string>();
+				variables["link"] = feed.items[0].link == null ? "#" : feed.items[0].link;
+				variables["title"] = feed.items[0].title == null ? "(no title)" : feed.items[0].title;
+				variables["content"] = feed.items[0].description == null ? "" : feed.items[0].description;
+				variables["feed_name"] = feed.user_name;
+				variables["feed_unread"] = unread.to_string();
+				new_items.add(variables);
+			}
+			template.define_foreach("home_new_list",new_items);
+
+			msg.set_status(Soup.KnownStatusCode.OK);
+			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+		}
+
+		private void root_handler(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			if(path == "/")
+			{
+				msg.set_redirect(Soup.KnownStatusCode.FOUND,"/home");
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"<a href=\"/home\">Click here</a>".data);
+			} else
+			{
+				// Dynamic page not found!
+				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
+				msg.set_response("text/html",Soup.MemoryUse.COPY,"Dynamic page not found!".data);
 			}
 		}
 
