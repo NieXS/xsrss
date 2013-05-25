@@ -13,6 +13,7 @@ namespace XSRSS
 			server.add_handler("/home",home_handler);
 			server.add_handler("/feeds",list_feeds);
 			server.add_handler("/allfeeds",list_all_items);
+			server.add_handler("/addfeed",add_feed);
 			server.add_handler("/static",static_files);
 			server.add_handler("/feed",show_feed);
 			server.add_handler("/update",update_feed);
@@ -56,6 +57,23 @@ namespace XSRSS
 			{
 				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
 				msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
+			}
+		}
+
+		private void add_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			if(msg.method == "GET")
+			{
+				Template template = new Template("add_feed_form");
+				template.define_variable("error_message","");
+				msg.set_status(Soup.KnownStatusCode.OK);
+				msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+			} else if(msg.method == "POST")
+			{
+				Template template = new Template("add_feed_form");
+				template.define_variable("error_message","Not implemented!");
+				msg.set_status(Soup.KnownStatusCode.OK);
+				msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
 			}
 		}
 
