@@ -46,18 +46,18 @@ namespace XSRSS
 					{
 						stderr.printf("Could not read file %s\n",filename);
 						msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
-						msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
+						msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"File not found".data);
 					}
 				} catch(Error e)
 				{
 					stderr.printf("Error opening file %s\n",filename);
 					msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
-					msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
+					msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"File not found".data);
 				}
 			} else
 			{
 				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"File not found".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"File not found".data);
 			}
 		}
 
@@ -68,13 +68,13 @@ namespace XSRSS
 				Template template = new Template("add_feed_form");
 				template.define_variable("error_message","");
 				msg.set_status(Soup.KnownStatusCode.OK);
-				msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 			} else if(msg.method == "POST")
 			{
 				Template template = new Template("add_feed_form");
 				template.define_variable("error_message","Not implemented!");
 				msg.set_status(Soup.KnownStatusCode.OK);
-				msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 			}
 		}
 
@@ -92,7 +92,7 @@ namespace XSRSS
 			}
 			template.define_foreach("feed_list_manager",feeds);
 			msg.set_status(Soup.KnownStatusCode.OK);
-			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+			msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 		}
 
 		private void home_handler(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
@@ -123,7 +123,7 @@ namespace XSRSS
 			template.define_foreach("home_new_list",new_items);
 
 			msg.set_status(Soup.KnownStatusCode.OK);
-			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+			msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 		}
 
 		private void root_handler(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
@@ -131,12 +131,12 @@ namespace XSRSS
 			if(path == "/")
 			{
 				msg.set_redirect(Soup.KnownStatusCode.FOUND,"/home");
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"<a href=\"/home\">Click here</a>".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"<a href=\"/home\">Click here</a>".data);
 			} else
 			{
 				// Dynamic page not found!
 				msg.set_status(Soup.KnownStatusCode.NOT_FOUND);
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"Dynamic page not found!".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"Dynamic page not found!".data);
 			}
 		}
 
@@ -159,11 +159,11 @@ namespace XSRSS
 			if(found)
 			{
 				msg.set_status(Soup.KnownStatusCode.OK);
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"Update queued! Check back in 5-10 seconds, tops.".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"Update queued! Check back in 5-10 seconds, tops.".data);
 			} else
 			{
 				msg.set_status(Soup.KnownStatusCode.OK);
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"Couldn't find a feed with that name!".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"Couldn't find a feed with that name!".data);
 			}
 		}
 
@@ -187,10 +187,10 @@ namespace XSRSS
 			msg.set_status(Soup.KnownStatusCode.OK);
 			if(found_feed)
 			{
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"All items from feed %s were marked as read successfully.".printf(feed_name).data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"All items from feed %s were marked as read successfully.".printf(feed_name).data);
 			} else
 			{
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"Couldn't find a feed with name %s!".printf(feed_name).data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"Couldn't find a feed with name %s!".printf(feed_name).data);
 			}
 		}
 
@@ -219,10 +219,10 @@ namespace XSRSS
 			msg.set_status(Soup.KnownStatusCode.OK);
 			if(found_item)
 			{
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"Item marked as read successfully.".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"Item marked as read successfully.".data);
 			} else
 			{
-				msg.set_response("text/html",Soup.MemoryUse.COPY,"Item not found!".data);
+				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,"Item not found!".data);
 			}
 		}
 
@@ -254,7 +254,7 @@ namespace XSRSS
 				template.define_variable("noitems","<span class=\"noitems\">There are no items in the database.</span>");
 			}
 			msg.set_status(Soup.KnownStatusCode.OK);
-			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+			msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 		}
 
 		private void list_feeds(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
@@ -269,7 +269,7 @@ namespace XSRSS
 			}
 			template.define_variable("feeds",feed_list.str);
 			msg.set_status(Soup.KnownStatusCode.OK);
-			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+			msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 		}
 
 		private void show_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
@@ -312,7 +312,7 @@ namespace XSRSS
 				template.define_variable("noitems","<span class=\"noitems\">There are no items in this feed.</span>");
 			}
 			msg.set_status(Soup.KnownStatusCode.OK);
-			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
+			msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
 		}
 
 		private LinkedList<Feed.Item>? assemble_item_list(string? feed_name)

@@ -19,12 +19,29 @@ namespace XSRSS
 		public TemplateCallbacks()
 		{
 			register_callback("feed_list",feed_list);
+			register_callback("unread_feed_items",total_unread_items);
 		}
 
 		public void register_callback(string name,Callback.TemplateCallback callback)
 		{
 			Callback callback_wrapper = new Callback(callback);
 			callbacks[name] = callback_wrapper;
+		}
+
+		private static string total_unread_items()
+		{
+			int unread = 0;
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				foreach(Feed.Item item in feed.items)
+				{
+					if(!item.read)
+					{
+						unread++;
+					}
+				}
+			}
+			return "(%d)".printf(unread);
 		}
 
 		private static string feed_list()
