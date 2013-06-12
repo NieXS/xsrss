@@ -1,0 +1,8 @@
+<h2>Subscriptions</h2>
+<form method="post" action="/addfeed">
+<p>Add new feed: <input type="text" name="feed_url" placeholder="Feed URL" /> <input type="submit" value="Submit" />
+<span class="error_message">$error_message$</span></p>
+</form>
+<ul class="manage_feeds_list">
+	$foreach:feed_list_manager$
+</ul>

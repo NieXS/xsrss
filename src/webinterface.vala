@@ -14,6 +14,7 @@ namespace XSRSS
 			server.add_handler("/feeds",list_feeds);
 			server.add_handler("/allfeeds",list_all_items);
 			server.add_handler("/addfeed",add_feed);
+			server.add_handler("/managefeeds",manage_feeds);
 			server.add_handler("/static",static_files);
 			server.add_handler("/feed",show_feed);
 			server.add_handler("/update",update_feed);
@@ -75,6 +76,23 @@ namespace XSRSS
 				msg.set_status(Soup.KnownStatusCode.OK);
 				msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
 			}
+		}
+
+		private void manage_feeds(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
+		{
+			Template template = new Template("manage_feeds");
+			template.define_variable("title","Manage subscriptions");
+			LinkedList<HashMap<string,string>> feeds = new LinkedList<HashMap<string,string>>();
+			foreach(Feed feed in Instance.feed_manager.feeds)
+			{
+				HashMap<string,string> variables = new HashMap<string,string>();
+				variables["feed"] = feed.user_name;
+				variables["feedurl"] = Uri.escape_string(feed.user_name);
+				feeds.add(variables);
+			}
+			template.define_foreach("feed_list_manager",feeds);
+			msg.set_status(Soup.KnownStatusCode.OK);
+			msg.set_response("text/html",Soup.MemoryUse.COPY,template.render().data);
 		}
 
 		private void home_handler(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
@@ -267,7 +285,7 @@ namespace XSRSS
 					HashMap<string,string> variables = new HashMap<string,string>();
 					variables["title"] = item.title;
 					variables["unread"] = item.read ? "" : " unread";
-					variables["markasread"] = item.read ? "" : " - <a href=\"/markasread/%s\">Mark as read</a>".printf(item.guid);
+					variables["markasread"] = item.read ? "" : " - <a href=\"/markasread/%s\">Mark as read</a>".printf(Uri.escape_string(item.guid));
 					variables["pubdate"] = item.pub_date != null ? item.pub_date.format("%F %T") : "";
 					variables["link"] = item.link != null ? "<a href=\"%s\">".printf(item.link) : "";
 					variables["endlink"] = item.link != null ? "</a>" : "";
@@ -287,6 +305,7 @@ namespace XSRSS
 			}
 			template.define_variable("title",feed_name);
 			template.define_variable("feed",feed_name);
+			template.define_variable("feed_uriescaped",Uri.escape_string(feed_name));
 			template.define_variable("updating_text",feed_updated ? "" : "Feed is updating");
 			if(items == null)
 			{

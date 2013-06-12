@@ -207,10 +207,12 @@ namespace XSRSS
 			stdout.printf("Our database id: %d\n",id);
 			foreach(Item item in items)
 			{
-				sql = "SELECT guid FROM items WHERE guid = '%s';".printf(item.guid);
+				sql = "SELECT guid, read FROM items WHERE guid = '%s';".printf(item.guid);
 				bool found = false;
+				bool read = false;
 				result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
 					found = true;
+					read = int.parse(values[1]) == 1 ? true : false;
 					return 0;
 				},out err_msg);
 				if(!(result == Sqlite.OK || result == Sqlite.ROW))
@@ -220,39 +222,45 @@ namespace XSRSS
 				}
 				if(found)
 				{
-					sql = "UPDATE items SET guid = ?, feed_id = ?, title = ?, link = ?, description = ?, content = ?, pub_date = ?, author = ?, read = ? WHERE guid = ?;";
-					Sqlite.Statement statement;
-					if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
+					if(item.read != read)
 					{
-						statement.bind_text(1,item.guid,-1);
-						statement.bind_int(2,id);
-						statement.bind_text(3,item.title,-1);
-						statement.bind_text(4,item.link,-1);
-						statement.bind_text(5,item.description,-1);
-						statement.bind_text(6,item.content,-1);
-						statement.bind_text(7,item.pub_date.format("%F %T"),-1);
-						statement.bind_text(8,item.author,-1);
-						statement.bind_int(9,item.read ? 1 : 0);
-						statement.bind_text(10,item.guid,-1);
-						switch(statement.step())
+						sql = "UPDATE items SET guid = ?, feed_id = ?, title = ?, link = ?, description = ?, content = ?, pub_date = ?, author = ?, read = ? WHERE guid = ?;";
+						Sqlite.Statement statement;
+						if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 						{
-							case Sqlite.ROW:
-							case Sqlite.DONE:
-								stdout.printf("Updated item with guid \"%s\" successfully.\n",item.guid);
-								break;
-							case Sqlite.MISUSE:
-								stderr.printf("Sqlite.MISUSE happened!\n");
-								Posix.exit(1);
-								break;
-							default:
-								stderr.printf("Something went wrong! %s\n",Instance.db_connection.database.errmsg());
-								return;
-								break;
+							statement.bind_text(1,item.guid,-1);
+							statement.bind_int(2,id);
+							statement.bind_text(3,item.title,-1);
+							statement.bind_text(4,item.link,-1);
+							statement.bind_text(5,item.description,-1);
+							statement.bind_text(6,item.content,-1);
+							statement.bind_text(7,item.pub_date.format("%F %T"),-1);
+							statement.bind_text(8,item.author,-1);
+							statement.bind_int(9,item.read ? 1 : 0);
+							statement.bind_text(10,item.guid,-1);
+							switch(statement.step())
+							{
+								case Sqlite.ROW:
+								case Sqlite.DONE:
+									stdout.printf("Updated item with guid \"%s\" successfully.\n",item.guid);
+									break;
+								case Sqlite.MISUSE:
+									stderr.printf("Sqlite.MISUSE happened!\n");
+									Posix.exit(1);
+									break;
+								default:
+									stderr.printf("Something went wrong! %s\n",Instance.db_connection.database.errmsg());
+									return;
+									break;
+							}
+						} else
+						{
+							stderr.printf("Error preparing statement! %s\n",Instance.db_connection.database.errmsg());
+							Posix.exit(1);
 						}
 					} else
 					{
-						stderr.printf("Error preparing statement! %s\n",Instance.db_connection.database.errmsg());
-						Posix.exit(1);
+						stdout.printf("Skipping up to date item with guid %s\n",item.guid);
 					}
 				} else
 				{
