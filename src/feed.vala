@@ -33,9 +33,9 @@ namespace XSRSS
 		public bool updating = false;
 		private TimeoutSource update_source = null;
 
-		public Feed(string name,string feed_url)
+		public Feed(string feed_url)
 		{
-			user_name = name;
+			user_name = null;
 			this.feed_url = feed_url;
 			soup_session = new Soup.SessionAsync();
 			Soup.Logger logger = new Soup.Logger(Soup.LoggerLogLevel.HEADERS,-1);
@@ -74,7 +74,7 @@ namespace XSRSS
 
 		private bool load_database_data()
 		{
-			string sql = "SELECT title, description, link, image_url, image_link, image_alt_text, update_interval, id FROM feeds WHERE user_name = '%s';".printf(user_name);
+			string sql = "SELECT title, description, link, image_url, image_link, image_alt_text, update_interval, id FROM feeds WHERE feed_url = '%s';".printf(feed_url);
 			bool has_data = false;
 			string err_msg;
 			int id = -1;
@@ -333,6 +333,9 @@ namespace XSRSS
 				{
 					case "title":
 						title = node->get_content();
+						user_name = node->get_content();
+						// This is supposed to be temporary since we shouldn't need
+						// a name for subscriptions, only the feed url
 						break;
 					case "link":
 						link = node->get_content();

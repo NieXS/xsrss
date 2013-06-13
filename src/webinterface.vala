@@ -9,6 +9,13 @@ namespace XSRSS
 		public WebInterface()
 		{
 			server = new Soup.Server("port",9889);
+			server.request_read.connect((msg, client) => 
+			{
+				msg.request_headers.foreach((name, value) =>
+				{
+					stdout.printf("< %s: %s\n",name,value);
+				});
+			});
 			server.add_handler("/",root_handler);
 			server.add_handler("/home",home_handler);
 			server.add_handler("/feeds",list_feeds);
@@ -82,6 +89,14 @@ namespace XSRSS
 		{
 			Template template = new Template("manage_feeds");
 			template.define_variable("title","Manage subscriptions");
+			if(msg.method == "POST")
+			{
+				HashTable<string,string> form_data = Soup.Form.decode((string)msg.request_body.data);
+				if(form_data.contains("feed_url"))
+				{
+					template.define_variable("error_message",form_data["feed_url"]);
+				}
+			}
 			LinkedList<HashMap<string,string>> feeds = new LinkedList<HashMap<string,string>>();
 			foreach(Feed feed in Instance.feed_manager.feeds)
 			{
