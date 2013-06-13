@@ -30,5 +30,12 @@ namespace XSRSS
 				feed.update();
 			}
 		}
+
+		public void add_new_feed(string feed_url)
+		{
+			Feed feed = new Feed(feed_url);
+			feeds.add(feed);
+			feed.update();
+		}
 	}
 }

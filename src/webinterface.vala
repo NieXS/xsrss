@@ -20,7 +20,6 @@ namespace XSRSS
 			server.add_handler("/home",home_handler);
 			server.add_handler("/feeds",list_feeds);
 			server.add_handler("/allfeeds",list_all_items);
-			server.add_handler("/addfeed",add_feed);
 			server.add_handler("/managefeeds",manage_feeds);
 			server.add_handler("/static",static_files);
 			server.add_handler("/feed",show_feed);
@@ -68,23 +67,6 @@ namespace XSRSS
 			}
 		}
 
-		private void add_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
-		{
-			if(msg.method == "GET")
-			{
-				Template template = new Template("add_feed_form");
-				template.define_variable("error_message","");
-				msg.set_status(Soup.KnownStatusCode.OK);
-				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
-			} else if(msg.method == "POST")
-			{
-				Template template = new Template("add_feed_form");
-				template.define_variable("error_message","Not implemented!");
-				msg.set_status(Soup.KnownStatusCode.OK);
-				msg.set_response("text/html; charset=UTF-8",Soup.MemoryUse.COPY,template.render().data);
-			}
-		}
-
 		private void manage_feeds(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			Template template = new Template("manage_feeds");
@@ -92,10 +74,17 @@ namespace XSRSS
 			if(msg.method == "POST")
 			{
 				HashTable<string,string> form_data = Soup.Form.decode((string)msg.request_body.data);
-				if(form_data.contains("feed_url"))
+				if(form_data.contains("feed_url") && form_data["feed_url"] != null && form_data["feed_url"] != "")
 				{
-					template.define_variable("error_message",form_data["feed_url"]);
+					Instance.feed_manager.add_new_feed(form_data["feed_url"]);
+					template.define_variable("error_message","Subscription added successfully.");
+				} else
+				{
+					template.define_variable("error_message","Please type a valid URL.");
 				}
+			} else
+			{
+				template.define_variable("error_message","");
 			}
 			LinkedList<HashMap<string,string>> feeds = new LinkedList<HashMap<string,string>>();
 			foreach(Feed feed in Instance.feed_manager.feeds)
