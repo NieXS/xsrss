@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS items;
 CREATE TABLE feeds (
 	id INTEGER PRIMARY KEY,
 	user_name TEXT NOT NULL,
-	feed_url TEXT NOT NULL,
+	feed_url TEXT UNIQUE NOT NULL,
 	title TEXT,
 	description TEXT,
 	link TEXT
