@@ -152,6 +152,7 @@ namespace XSRSS
 		private void update_feed(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			string feed_name = path.substring(8); // /update/
+			stdout.printf("feed_name: %s\n",feed_name);
 			bool found = false;
 			foreach(Feed feed in Instance.feed_manager.feeds)
 			{
@@ -179,6 +180,7 @@ namespace XSRSS
 		private void mark_all_items_as_read(Soup.Server server,Soup.Message msg,string? path,HashTable<string,string>? query,Soup.ClientContext client)
 		{
 			string feed_name = Uri.unescape_string(path.substring(15)); // /markallasread/
+			stdout.printf("feed_name: %s\n",feed_name);
 			bool found_feed = false;
 			foreach(Feed feed in Instance.feed_manager.feeds)
 			{

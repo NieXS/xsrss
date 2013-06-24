@@ -402,6 +402,7 @@ namespace XSRSS
 				if(parse_xml((string)message.response_body.data))
 				{
 					stdout.printf("XML parsed successfully, we're good\n");
+					save_data_to_database();
 					return true;
 				} else
 				{
