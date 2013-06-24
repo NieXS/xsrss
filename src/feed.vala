@@ -12,7 +12,6 @@ namespace XSRSS
 			public string content = null;
 			public DateTime pub_date = null;
 			public string guid = null;
-			public string author = null;
 			public bool read = false;
 		}
 		public string user_name;
@@ -21,12 +20,7 @@ namespace XSRSS
 		public string title = null;
 		public string link  = null;
 		public string description = null;
-		public DateTime pub_date = null;
-		public DateTime last_build_date = null;
-		public int update_interval = 1;
-		public string image_url = null;
-		public string image_link = null;
-		public string image_alt_text = null;
+		public int update_interval = 30;
 		public Gee.ArrayList<Item> items = new ArrayList<Item>((EqualDataFunc)item_equal_func);
 		public string raw_feed_text = null;
 		private Soup.Session soup_session;
@@ -80,7 +74,7 @@ namespace XSRSS
 
 		private bool load_database_data()
 		{
-			string sql = "SELECT title, description, link, image_url, image_link, image_alt_text, update_interval, id FROM feeds WHERE feed_url = '%s';".printf(feed_url);
+			string sql = "SELECT title, description, link, id FROM feeds WHERE feed_url = '%s';".printf(feed_url);
 			bool has_data = false;
 			string err_msg;
 			int id = -1;
@@ -89,11 +83,7 @@ namespace XSRSS
 				title = values[0];
 				description = values[1];
 				link = values[2];
-				image_url = values[3];
-				image_link = values[4];
-				image_alt_text = values[5];
-				update_interval = int.parse(values[6]);
-				id = values[7] != null ? int.parse(values[7]) : 60;
+				id = int.parse(values[3]);
 				return 0;
 			},out err_msg);
 			if(!(result == Sqlite.OK || result == Sqlite.ROW))
@@ -101,7 +91,7 @@ namespace XSRSS
 				stderr.printf("Error running query! D: %s\n",err_msg);
 				return false;
 			}
-			sql = "SELECT guid, title, description, link, content, pub_date, author, read FROM items WHERE feed_id = '%d'".printf(id);
+			sql = "SELECT guid, title, description, link, content, pub_date, read FROM items WHERE feed_id = '%d'".printf(id);
 			result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
 				Item item = new Item();
 				item.guid = values[0];
@@ -119,8 +109,7 @@ namespace XSRSS
 				{
 					item.pub_date = null;
 				}
-				item.author = values[6];
-				item.read = int.parse(values[7]) == 1;
+				item.read = int.parse(values[6]) == 1;
 				if(!has_item_with_same_guid(item.guid))
 				{
 					items.add(item);
@@ -154,10 +143,10 @@ namespace XSRSS
 			}
 			if(has_data)
 			{
-				sql = "UPDATE feeds SET user_name = ?, feed_url = ?, title = ?, description = ?, link = ?, update_interval = ? WHERE user_name = '%s';".printf(user_name);
+				sql = "UPDATE feeds SET user_name = ?, feed_url = ?, title = ?, description = ?, link = ? WHERE user_name = ?;";
 			} else
 			{
-				sql = "INSERT INTO feeds (user_name, feed_url, title, description, link, update_interval) VALUES (?,?,?,?,?,?);";
+				sql = "INSERT INTO feeds (user_name, feed_url, title, description, link) VALUES (?,?,?,?,?);";
 			}
 			Sqlite.Statement statement;
 			if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
@@ -167,7 +156,10 @@ namespace XSRSS
 				statement.bind_text(3,title,-1);
 				statement.bind_text(4,description,-1);
 				statement.bind_text(5,link,-1);
-				statement.bind_int(6,update_interval);
+				if(has_data)
+				{
+					statement.bind_text(6,user_name,-1);
+				}
 				stdout.printf("Running SQL:\n\t%s\n",statement.sql());
 				switch(statement.step())
 				{
@@ -230,7 +222,7 @@ namespace XSRSS
 				{
 					if(item.read != read)
 					{
-						sql = "UPDATE items SET guid = ?, feed_id = ?, title = ?, link = ?, description = ?, content = ?, pub_date = ?, author = ?, read = ? WHERE guid = ?;";
+						sql = "UPDATE items SET guid = ?, feed_id = ?, title = ?, link = ?, description = ?, content = ?, pub_date = ?, read = ? WHERE guid = ?;";
 						Sqlite.Statement statement;
 						if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 						{
@@ -241,9 +233,8 @@ namespace XSRSS
 							statement.bind_text(5,item.description,-1);
 							statement.bind_text(6,item.content,-1);
 							statement.bind_text(7,item.pub_date.format("%F %T"),-1);
-							statement.bind_text(8,item.author,-1);
-							statement.bind_int(9,item.read ? 1 : 0);
-							statement.bind_text(10,item.guid,-1);
+							statement.bind_int(8,item.read ? 1 : 0);
+							statement.bind_text(9,item.guid,-1);
 							switch(statement.step())
 							{
 								case Sqlite.ROW:
@@ -270,7 +261,7 @@ namespace XSRSS
 					}
 				} else
 				{
-					sql = "INSERT INTO items (guid, feed_id, title, link, description, content, pub_date, author, read) VALUES (?,?,?,?,?,?,?,?,?);";
+					sql = "INSERT INTO items (guid, feed_id, title, link, description, content, pub_date, read) VALUES (?,?,?,?,?,?,?,?);";
 					Sqlite.Statement statement;
 					if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 					{
@@ -281,8 +272,7 @@ namespace XSRSS
 						statement.bind_text(5,item.description,-1);
 						statement.bind_text(6,item.content,-1);
 						statement.bind_text(7,item.pub_date.format("%F %T"),-1);
-						statement.bind_text(8,item.author,-1);
-						statement.bind_int(9,item.read ? 1 : 0);
+						statement.bind_int(8,item.read ? 1 : 0);
 						switch(statement.step())
 						{
 							case Sqlite.ROW:
@@ -311,7 +301,6 @@ namespace XSRSS
 		{
 			Xml.Doc *document = Xml.Parser.parse_doc(xml_text);
 			Xml.Node *root = document->get_root_element();
-			int update_frequency = 1; // <sy:updateFrequency>
 			if(root == null)
 			{
 				stderr.printf("xml_text is empty!\n");
@@ -340,44 +329,12 @@ namespace XSRSS
 					case "title":
 						title = node->get_content();
 						user_name = node->get_content();
-						// This is supposed to be temporary since we shouldn't need
-						// a name for subscriptions, only the feed url
 						break;
 					case "link":
 						link = node->get_content();
 						break;
 					case "description":
 						description = node->get_content();
-						break;
-					case "lastBuildDate":
-						last_build_date = parse_text_date(node->get_content());
-						break;
-					case "updatePeriod":
-						switch(node->get_content())
-						{
-							case "hourly":
-								update_interval = 60;
-								break;
-							case "daily":
-								update_interval = 60*24;
-								break;
-							case "weekly":
-								update_interval = 60*24*7;
-								break;
-							case "monthly":
-								update_interval = 60*24*30;
-								break;
-							case "yearly":
-								update_interval = 60*24*365;
-								break;
-						}
-						break;
-					case "updateFrequency":
-						update_frequency = int.parse(node->get_content());
-						if(update_frequency > 0)
-						{
-							update_interval = update_interval / update_frequency;
-						}
 						break;
 					case "item":
 						stdout.printf("Found item!\n");
@@ -410,6 +367,10 @@ namespace XSRSS
 						if(item.guid == null)
 						{
 							item.guid = item.link;
+						}
+						if(item.pub_date == null)
+						{
+							item.pub_date = new DateTime.now_utc();
 						}
 						if(!has_item_with_same_guid(item.guid))
 						{

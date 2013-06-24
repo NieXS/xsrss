@@ -9,11 +9,7 @@ CREATE TABLE feeds (
 	feed_url TEXT NOT NULL,
 	title TEXT,
 	description TEXT,
-	link TEXT,
-	image_url TEXT,
-	image_link TEXT,
-	image_alt_text TEXT,
-	update_interval INTEGER NOT NULL
+	link TEXT
 );
 
 CREATE TABLE items (
@@ -25,6 +21,5 @@ CREATE TABLE items (
 	description TEXT,
 	content TEXT,
 	pub_date TEXT,
-	author TEXT,
 	read INTEGER NOT NULL
 );
