@@ -1,3 +1,4 @@
-* There needs to be a way to add/remove feeds from the web interface
 * The feed view should be paginated, or ideally, be an infinitely-scrolling
   page just like google reader is
+* We shouldn't keep all items in memory and instead just query them from the
+  database
