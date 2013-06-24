@@ -31,11 +31,17 @@ namespace XSRSS
 			}
 		}
 
-		public void add_new_feed(string feed_url)
+		public bool add_new_feed(string feed_url)
 		{
 			Feed feed = new Feed(feed_url);
-			feeds.add(feed);
-			feed.update();
+			if(feed.sync_update())
+			{
+				feeds.add(feed);
+				return true;
+			} else
+			{
+				return false;
+			}
 		}
 	}
 }

@@ -76,8 +76,13 @@ namespace XSRSS
 				HashTable<string,string> form_data = Soup.Form.decode((string)msg.request_body.data);
 				if(form_data.contains("feed_url") && form_data["feed_url"] != null && form_data["feed_url"] != "")
 				{
-					Instance.feed_manager.add_new_feed(form_data["feed_url"]);
-					template.define_variable("error_message","Subscription added successfully.");
+					if(Instance.feed_manager.add_new_feed(form_data["feed_url"]))
+					{
+						template.define_variable("error_message","Subscription added successfully.");
+					} else
+					{
+						template.define_variable("error_message","Failed to add feed.");
+					}
 				} else
 				{
 					template.define_variable("error_message","Please type a valid URL.");

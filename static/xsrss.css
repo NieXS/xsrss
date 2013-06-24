@@ -6,6 +6,12 @@ body
 	font-size: 90%;
 }
 
+a,a:hover
+{
+	color: #0000FF;
+	text-decoration: none;
+}
+
 #main
 {
 	padding: 10px;
@@ -26,4 +32,16 @@ body
 #content
 {
 	margin-left: 160px;
+}
+
+.unread
+{
+	border: 1px solid #FF0000 !important;
+}
+
+.item
+{
+	padding: 5px;
+	margin-top: 1px;
+	margin-bottom: 1px;
 }

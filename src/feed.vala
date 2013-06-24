@@ -23,7 +23,7 @@ namespace XSRSS
 		public string description = null;
 		public DateTime pub_date = null;
 		public DateTime last_build_date = null;
-		public int update_interval = 60; // in minutes
+		public int update_interval = 1;
 		public string image_url = null;
 		public string image_link = null;
 		public string image_alt_text = null;
@@ -43,7 +43,7 @@ namespace XSRSS
 			soup_session.add_feature_by_type(typeof(Soup.ProxyResolverDefault));
 			if(!load_database_data())
 			{
-				stdout.printf("Feed \"%s\" has no data in database!\n",user_name);
+				stdout.printf("Feed \"%s\" has no data in database!\n",feed_url);
 			}
 			update_timeout_source();
 		}
@@ -62,12 +62,18 @@ namespace XSRSS
 			{
 				update_source.destroy();
 			}
-			update_source = new TimeoutSource.seconds(update_interval);
+			update_source = new TimeoutSource.seconds(update_interval*60);
 			update_source.set_callback(() =>
 			{
+				// Just checking if we should be alive or not
+				if(!Instance.feed_manager.feeds.contains(this))
+				{
+					stdout.printf("We should be dead, quitting\n");
+					return false;
+				}
 				stdout.printf("Updating feed %s\n",user_name);
 				update();
-				return false;
+				return true;
 			});
 			update_source.attach(null);
 		}
@@ -422,6 +428,30 @@ namespace XSRSS
 			updating = true;
 			Soup.Message message = new Soup.Message("GET",feed_url);
 			soup_session.queue_message(message,process_message);
+		}
+
+		public bool sync_update()
+		{
+			Soup.Session sync_session = new Soup.Session();
+			Soup.Message message = new Soup.Message("GET",feed_url);
+			uint status_code = sync_session.send_message(message);
+			if(status_code == Soup.KnownStatusCode.OK)
+			{
+				stdout.printf("Got message, trying to parse now\n");
+				if(parse_xml((string)message.response_body.data))
+				{
+					stdout.printf("XML parsed successfully, we're good\n");
+					return true;
+				} else
+				{
+					stderr.printf("Couldn't parse XML!\n");
+					return false;
+				}
+			} else
+			{
+				stderr.printf("Got non-200 status code: %d\n",(int)status_code);
+				return false;
+			}
 		}
 
 		private void process_message(Soup.Session session,Soup.Message message)
