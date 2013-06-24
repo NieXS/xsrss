@@ -154,16 +154,29 @@ namespace XSRSS
 			string feed_name = path.substring(8); // /update/
 			stdout.printf("feed_name: %s\n",feed_name);
 			bool found = false;
-			foreach(Feed feed in Instance.feed_manager.feeds)
+			if(feed_name == "")
 			{
-				if(feed.user_name == feed_name)
+				found = true;
+				foreach(Feed feed in Instance.feed_manager.feeds)
 				{
-					found = true;
 					if(!feed.updating)
 					{
 						feed.update();
 					}
-					break;
+				}
+			} else
+			{
+				foreach(Feed feed in Instance.feed_manager.feeds)
+				{
+					if(feed.user_name == feed_name)
+					{
+						found = true;
+						if(!feed.updating)
+						{
+							feed.update();
+						}
+						break;
+					}
 				}
 			}
 			if(found)
@@ -182,17 +195,30 @@ namespace XSRSS
 			string feed_name = Uri.unescape_string(path.substring(15)); // /markallasread/
 			stdout.printf("feed_name: %s\n",feed_name);
 			bool found_feed = false;
-			foreach(Feed feed in Instance.feed_manager.feeds)
+			if(feed_name == "")
 			{
-				if(feed.user_name == feed_name)
+				found_feed = true;
+				foreach(Feed feed in Instance.feed_manager.feeds)
 				{
 					foreach(Feed.Item item in feed.items)
 					{
 						item.read = true;
 					}
-					feed.save_data_to_database();
-					found_feed = true;
-					break;
+				}
+			} else
+			{
+				foreach(Feed feed in Instance.feed_manager.feeds)
+				{
+					if(feed.user_name == feed_name)
+					{
+						foreach(Feed.Item item in feed.items)
+						{
+							item.read = true;
+						}
+						feed.save_data_to_database();
+						found_feed = true;
+						break;
+					}
 				}
 			}
 			msg.set_status(Soup.KnownStatusCode.OK);

@@ -74,24 +74,36 @@ namespace XSRSS
 
 		private bool load_database_data()
 		{
-			string sql = "SELECT title, description, link, id FROM feeds WHERE feed_url = '%s';".printf(feed_url);
+			string sql = "SELECT title, description, link, id FROM feeds WHERE feed_url = ?;";
+			Sqlite.Statement statement;
 			bool has_data = false;
-			string err_msg;
 			int id = -1;
-			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
-				has_data = true;
-				title = values[0];
-				description = values[1];
-				link = values[2];
-				id = int.parse(values[3]);
-				return 0;
-			},out err_msg);
-			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 			{
-				stderr.printf("Error running query! D: %s\n",err_msg);
-				return false;
+				statement.bind_text(1,feed_url,-1);
+				switch(statement.step())
+				{
+					case Sqlite.ROW:
+						has_data = true;
+						user_name = statement.column_text(0);
+						title = statement.column_text(0);
+						description = statement.column_text(1);
+						link = statement.column_text(2);
+						id = statement.column_int(3);
+						break;
+					case Sqlite.DONE:
+						stdout.printf("No data!\n");
+						return false;
+						break;
+					default:
+						stderr.printf("Error running query! %s\n",Instance.db_connection.database.errmsg());
+						return false;
+						break;
+				}
 			}
 			sql = "SELECT guid, title, description, link, content, pub_date, read FROM items WHERE feed_id = '%d'".printf(id);
+			int result;
+			string err_msg;
 			result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
 				Item item = new Item();
 				item.guid = values[0];
@@ -129,17 +141,25 @@ namespace XSRSS
 
 		public bool save_data_to_database()
 		{
-			string sql = "SELECT * FROM feeds WHERE user_name = '%s';".printf(user_name);
+			string sql = "SELECT * FROM feeds WHERE feed_url = ?;";
+			Sqlite.Statement statement;
 			bool has_data = false;
-			string err_msg;
-			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
-				has_data = true;
-				return 0;
-			},out err_msg);
-			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 			{
-				stderr.printf("Error running query! D: %s\n",err_msg);
-				return false;
+				statement.bind_text(1,feed_url);
+				switch(statement.step())
+				{
+					case Sqlite.ROW:
+						has_data = true;
+						break;
+					case Sqlite.DONE:
+						has_data = false;
+						break;
+					default:
+						stderr.printf("Error running query! %s\n",Instance.db_connection.database.errmsg());
+						return false;
+						break;
+				}
 			}
 			if(has_data)
 			{
@@ -148,7 +168,6 @@ namespace XSRSS
 			{
 				sql = "INSERT INTO feeds (user_name, feed_url, title, description, link) VALUES (?,?,?,?,?);";
 			}
-			Sqlite.Statement statement;
 			if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 			{
 				statement.bind_text(1,user_name,-1);
@@ -190,40 +209,51 @@ namespace XSRSS
 		{
 			// Since this is being called from save_data_to_database we are
 			// guaranteed to have a row in the feeds table
-			string sql = "SELECT id FROM feeds WHERE user_name = '%s';".printf(user_name);
+			string sql = "SELECT id FROM feeds WHERE feed_url = ?;";
+			Sqlite.Statement statement;
 			int id = -1;
-			string err_msg;
-			int result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
-				id = int.parse(values[0]);
-				return 0;
-			},out err_msg);
-			if(!(result == Sqlite.OK || result == Sqlite.ROW))
+			if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 			{
-				stderr.printf("Error running query! D: %s\n",err_msg);
-				Posix.exit(1);
+				statement.bind_text(1,feed_url);
+				switch(statement.step())
+				{
+					case Sqlite.ROW:
+						id = statement.column_int(0);
+						break;
+					default:
+						stderr.printf("Error running query! %s\n",Instance.db_connection.database.errmsg());
+						break;
+				}
 			}
 			stdout.printf("Our database id: %d\n",id);
+			assert(id != -1);
 			foreach(Item item in items)
 			{
-				sql = "SELECT guid, read FROM items WHERE guid = '%s';".printf(item.guid);
+				sql = "SELECT read FROM items WHERE guid = ?;";
 				bool found = false;
 				bool read = false;
-				result = Instance.db_connection.database.exec(sql,(n_columns,values,column_names) => {
-					found = true;
-					read = int.parse(values[1]) == 1 ? true : false;
-					return 0;
-				},out err_msg);
-				if(!(result == Sqlite.OK || result == Sqlite.ROW))
+				if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 				{
-					stderr.printf("Error running query! D: %s\n",err_msg);
-					Posix.exit(1);
+					statement.bind_text(1,item.guid);
+					switch(statement.step())
+					{
+						case Sqlite.ROW:
+							found = true;
+							read = statement.column_int(0) == 1;
+							break;
+						case Sqlite.DONE:
+							found = false;
+							break;
+						default:
+							stderr.printf("Error running query! %s\n",Instance.db_connection.database.errmsg());
+							break;
+					}
 				}
 				if(found)
 				{
 					if(item.read != read)
 					{
 						sql = "UPDATE items SET guid = ?, feed_id = ?, title = ?, link = ?, description = ?, content = ?, pub_date = ?, read = ? WHERE guid = ?;";
-						Sqlite.Statement statement;
 						if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 						{
 							statement.bind_text(1,item.guid,-1);
@@ -262,7 +292,6 @@ namespace XSRSS
 				} else
 				{
 					sql = "INSERT INTO items (guid, feed_id, title, link, description, content, pub_date, read) VALUES (?,?,?,?,?,?,?,?);";
-					Sqlite.Statement statement;
 					if(Instance.db_connection.database.prepare_v2(sql,-1,out statement) == Sqlite.OK)
 					{
 						statement.bind_text(1,item.guid,-1);
